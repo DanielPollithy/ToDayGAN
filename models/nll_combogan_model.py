@@ -92,7 +92,7 @@ class NLLComboGANModel(BaseModel):
                 fake = fake[:, :-1, ...]
                 self.visuals.append( fake )
                 self.labels.append( 'fake_%d' % d )
-                self.visuals.append(fake_uncertainty)
+                self.visuals.append(self._normalize_img(fake_uncertainty))
                 self.labels.append('fake_%d_uncertainty' % d)
                 if self.opt.reconstruct:
                     rec = self.netG.forward(fake, d, self.DA)
@@ -100,7 +100,7 @@ class NLLComboGANModel(BaseModel):
                     rec = rec[:, :-1, ...]
                     self.visuals.append( rec )
                     self.labels.append( 'rec_%d' % d )
-                    self.visuals.append(rec_uncertainty)
+                    self.visuals.append(self._normalize_img(rec_uncertainty))
                     self.labels.append('rec_%d_uncertainty' % d)
 
     def get_image_paths(self):
@@ -200,10 +200,19 @@ class NLLComboGANModel(BaseModel):
         D_losses, G_losses, cyc_losses = extract(self.loss_D), extract(self.loss_G), extract(self.loss_cycle)
         return OrderedDict([('D', D_losses), ('G', G_losses), ('Cyc', cyc_losses)])
 
+    def _normalize_img(self, img):
+        img = img / torch.std(img)
+        img = img - torch.mean(img)
+        return img
+
     def get_current_visuals(self, testing=False):
         if not testing:
-            self.visuals = [self.real_A, self.fake_B, self.fake_B_uncertainty, self.rec_A, self.rec_A_uncertainty,
-                            self.real_B, self.fake_A, self.fake_A_uncertainty, self.rec_B, self.rec_B_uncertainty]
+            self.visuals = [self.real_A, self.fake_B,
+                            self._normalize_img(self.fake_B_uncertainty), self.rec_A,
+                            self._normalize_img(self.rec_A_uncertainty),
+                            self.real_B, self.fake_A,
+                            self._normalize_img(self.fake_A_uncertainty),
+                            self.rec_B, self._normalize_img(self.rec_B_uncertainty)]
             self.labels = ['real_A', 'fake_B', 'fake_B_uncertainty', 'rec_A', 'rec_A_uncertainty', 'real_B',
                            'fake_A', 'fake_A_uncertainty',
                            'rec_B', 'rec_B_uncertainty']
