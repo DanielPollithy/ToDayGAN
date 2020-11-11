@@ -71,23 +71,39 @@ class ComboGANModel(BaseModel):
             self.DB = input['DB'][0]
         self.image_paths = input['path']
 
-    def test(self):
+    def test(self, monte_carlo_samples=1):
         with torch.no_grad():
             self.visuals = [self.real_A]
             self.labels = ['real_%d' % self.DA]
 
-            # cache encoding to not repeat it everytime
-            encoded = self.netG.encode(self.real_A, self.DA)
-            for d in range(self.n_domains):
-                if d == self.DA and not self.opt.autoencode:
-                    continue
-                fake = self.netG.decode(encoded, d)
-                self.visuals.append( fake )
-                self.labels.append( 'fake_%d' % d )
-                if self.opt.reconstruct:
-                    rec = self.netG.forward(fake, d, self.DA)
-                    self.visuals.append( rec )
-                    self.labels.append( 'rec_%d' % d )
+
+            if monte_carlo_samples <= 1:
+                # cache encoding to not repeat it everytime
+                encoded = self.netG.encode(self.real_A, self.DA)
+                for d in range(self.n_domains):
+                    if d == self.DA and not self.opt.autoencode:
+                        continue
+                    fake = self.netG.decode(encoded, d)
+                    self.visuals.append( fake )
+                    self.labels.append( 'fake_%d' % d )
+                    if self.opt.reconstruct:
+                        rec = self.netG.forward(fake, d, self.DA)
+                        self.visuals.append( rec )
+                        self.labels.append( 'rec_%d' % d )
+            else:
+                for i in range(monte_carlo_samples):
+                    encoded = self.netG.encode(self.real_A, self.DA)
+                    for d in range(self.n_domains):
+                        if d == self.DA and not self.opt.autoencode:
+                            continue
+                        fake = self.netG.decode(encoded, d)
+                        self.visuals.append(fake)
+                        self.labels.append('mc_%s_fake_%d' % (i, d))
+                        if self.opt.reconstruct:
+                            rec = self.netG.forward(fake, d, self.DA)
+                            self.visuals.append(rec)
+                            self.labels.append('mc_%s_rec_%d' % (i, d))
+
 
     def get_image_paths(self):
         return self.image_paths
