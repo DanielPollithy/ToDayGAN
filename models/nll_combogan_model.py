@@ -20,6 +20,10 @@ class NLLComboGANModel(BaseModel):
         self.real_A = self.Tensor(opt.batchSize, opt.input_nc, opt.fineSize, opt.fineSize)
         self.real_B = self.Tensor(opt.batchSize, opt.output_nc, opt.fineSize, opt.fineSize)
 
+        # the log variance is given after tanh. A variance of 25 is enough to mimic a uniform distribution
+        #
+        self.unc_constant = 5.0
+
         # load/define networks
         self.netG = networks.define_G(opt.input_nc,
                                       opt.output_nc + 1,  # +1: used for the uncertainties
@@ -88,19 +92,19 @@ class NLLComboGANModel(BaseModel):
                 if d == self.DA and not self.opt.autoencode:
                     continue
                 fake = self.netG.decode(encoded, d)
-                fake_uncertainty = fake[:, -1:, ...]
+                fake_uncertainty = fake[:, -1:, ...] * self.unc_constant
                 fake = fake[:, :-1, ...]
                 self.visuals.append( fake )
                 self.labels.append( 'fake_%d' % d )
-                self.visuals.append(self._normalize_img(fake_uncertainty))
+                self.visuals.append(self._normalize_unc_img(fake_uncertainty))
                 self.labels.append('fake_%d_uncertainty' % d)
                 if self.opt.reconstruct:
                     rec = self.netG.forward(fake, d, self.DA)
-                    rec_uncertainty = rec[:, -1:, ...]
+                    rec_uncertainty = rec[:, -1:, ...] * self.unc_constant
                     rec = rec[:, :-1, ...]
                     self.visuals.append( rec )
                     self.labels.append( 'rec_%d' % d )
-                    self.visuals.append(self._normalize_img(rec_uncertainty))
+                    self.visuals.append(self._normalize_unc_img(rec_uncertainty))
                     self.labels.append('rec_%d_uncertainty' % d)
 
     def get_image_paths(self):
@@ -137,27 +141,27 @@ class NLLComboGANModel(BaseModel):
         # GAN loss
         # D_A(G_A(A))
         self.fake_B = self.netG.decode(encoded_A, self.DB)
-        self.fake_B_uncertainty = self.fake_B[:, -1:, ...]
+        self.fake_B_uncertainty = self.fake_B[:, -1:, ...] * self.unc_constant
         self.fake_B = self.fake_B[:, :-1, ...]
 
         pred_fake = self.netD.forward(self.fake_B, self.DB)
         self.loss_G[self.DA] = self.criterionGAN(self.pred_real_B, pred_fake, False)
         # D_B(G_B(B))
         self.fake_A = self.netG.decode(encoded_B, self.DA)
-        self.fake_A_uncertainty = self.fake_A[:, -1:, ...]
+        self.fake_A_uncertainty = self.fake_A[:, -1:, ...] * self.unc_constant
         self.fake_A = self.fake_A[:, :-1, ...]
         pred_fake = self.netD.forward(self.fake_A, self.DA)
         self.loss_G[self.DB] = self.criterionGAN(self.pred_real_A, pred_fake, False)
         # Forward cycle loss
         rec_encoded_A = self.netG.encode(self.fake_B, self.DB)
         self.rec_A = self.netG.decode(rec_encoded_A, self.DA)
-        self.rec_A_uncertainty = self.rec_A[:, -1:, ...]
+        self.rec_A_uncertainty = self.rec_A[:, -1:, ...] * self.unc_constant
         self.rec_A = self.rec_A[:, :-1, ...]
         self.loss_cycle[self.DA] = self.criterionCycle(self.rec_A, self.real_A, self.rec_A_uncertainty)
         # Backward cycle loss
         rec_encoded_B = self.netG.encode(self.fake_A, self.DA)
         self.rec_B = self.netG.decode(rec_encoded_B, self.DB)
-        self.rec_B_uncertainty = self.rec_B[:, -1:, ...]
+        self.rec_B_uncertainty = self.rec_B[:, -1:, ...] * self.unc_constant
         self.rec_B = self.rec_B[:, :-1, ...]
         self.loss_cycle[self.DB] = self.criterionCycle(self.rec_B, self.real_B, self.rec_B_uncertainty)
 
@@ -200,7 +204,8 @@ class NLLComboGANModel(BaseModel):
         D_losses, G_losses, cyc_losses = extract(self.loss_D), extract(self.loss_G), extract(self.loss_cycle)
         return OrderedDict([('D', D_losses), ('G', G_losses), ('Cyc', cyc_losses)])
 
-    def _normalize_img(self, img):
+    def _normalize_unc_img(self, img):
+        img = torch.exp(img)
         img = img / torch.std(img)
         img = img - torch.mean(img)
         return img
@@ -208,11 +213,11 @@ class NLLComboGANModel(BaseModel):
     def get_current_visuals(self, testing=False):
         if not testing:
             self.visuals = [self.real_A, self.fake_B,
-                            self._normalize_img(self.fake_B_uncertainty), self.rec_A,
-                            self._normalize_img(self.rec_A_uncertainty),
+                            self._normalize_unc_img(self.fake_B_uncertainty), self.rec_A,
+                            self._normalize_unc_img(self.rec_A_uncertainty),
                             self.real_B, self.fake_A,
-                            self._normalize_img(self.fake_A_uncertainty),
-                            self.rec_B, self._normalize_img(self.rec_B_uncertainty)]
+                            self._normalize_unc_img(self.fake_A_uncertainty),
+                            self.rec_B, self._normalize_unc_img(self.rec_B_uncertainty)]
             self.labels = ['real_A', 'fake_B', 'fake_B_uncertainty', 'rec_A', 'rec_A_uncertainty', 'real_B',
                            'fake_A', 'fake_A_uncertainty',
                            'rec_B', 'rec_B_uncertainty']
