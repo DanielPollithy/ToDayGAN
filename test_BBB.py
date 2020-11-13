@@ -1,5 +1,7 @@
 import time
 import os
+
+from models.bbb_combogan_model import BBBComboGANModel
 from options.test_options import TestOptions
 from data.data_loader import DataLoader
 from models.combogan_model import ComboGANModel
@@ -12,25 +14,13 @@ opt.nThreads = 1   # test code only supports nThreads = 1
 opt.batchSize = 1  # test code only supports batchSize = 1
 
 dataset = DataLoader(opt)
-model = ComboGANModel(opt)
+model = BBBComboGANModel(opt, len(dataset))
 visualizer = Visualizer(opt)
 # create website
 web_dir = os.path.join(opt.results_dir, opt.name, '%s_%d' % (opt.phase, opt.which_epoch))
 webpage = html.HTML(web_dir, 'Experiment = %s, Phase = %s, Epoch = %d' % (opt.name, opt.phase, opt.which_epoch))
 # store images for matrix visualization
 vis_buffer = []
-
-
-def enable_dropout(model):
-    """ Function to enable the dropout layers during test-time """
-    for m in model.modules():
-        if m.__class__.__name__.startswith('Dropout'):
-            m.train()
-
-
-# Enable dropout during test
-for m in model.netG.encoders + model.netG.decoders:
-    enable_dropout(m)
 
 monte_carlo_samples = opt.monte_carlo_samples
 

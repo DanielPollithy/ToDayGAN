@@ -43,6 +43,14 @@ class BaseOptions():
         self.parser.add_argument('--display_winsize', type=int, default=256,  help='display window size')
         self.parser.add_argument('--display_single_pane_ncols', type=int, default=0, help='if positive, display all images in a single visdom web panel with certain number of images per row.')
 
+        self.parser.add_argument('--kl_beta', type=float, default=0.0000001,
+                                 help='Weighting factor between Minibatch NLL and KL divergence in ELBO')
+        self.parser.add_argument('--local_reparam', action='store_true',
+                                 help='Use the local reparametrization BBB layers "BBB_LRT"')
+
+        self.parser.add_argument('--monte_carlo_samples', type=int, default=3,
+                                 help='How many forward passes?')
+
         self.initialized = True
 
     def parse(self):
