@@ -177,7 +177,7 @@ class BBBComboGANModel(BaseModel):
 
         # BBB loss
         loss_kl_div = 0.5 * self.kl_beta * (kl_encoded_A + kl_encoded_B) / self.num_train_data
-        self.loss_G.append(loss_kl_div)
+        self.loss_G[-1] = loss_kl_div
 
         # combined loss
         loss_G = self.loss_G[self.DA] + self.loss_G[self.DB] + \
