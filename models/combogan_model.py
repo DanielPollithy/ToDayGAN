@@ -76,7 +76,6 @@ class ComboGANModel(BaseModel):
             self.visuals = [self.real_A]
             self.labels = ['real_%d' % self.DA]
 
-
             if monte_carlo_samples <= 1:
                 # cache encoding to not repeat it everytime
                 encoded = self.netG.encode(self.real_A, self.DA)
@@ -91,18 +90,29 @@ class ComboGANModel(BaseModel):
                         self.visuals.append( rec )
                         self.labels.append( 'rec_%d' % d )
             else:
+                fakes = []
                 for i in range(monte_carlo_samples):
                     encoded = self.netG.encode(self.real_A, self.DA)
+
                     for d in range(self.n_domains):
                         if d == self.DA and not self.opt.autoencode:
                             continue
                         fake = self.netG.decode(encoded, d)
+                        fakes.append(fake)
                         self.visuals.append(fake)
                         self.labels.append('mc_%s_fake_%d' % (i, d))
                         if self.opt.reconstruct:
                             rec = self.netG.forward(fake, d, self.DA)
                             self.visuals.append(rec)
                             self.labels.append('mc_%s_rec_%d' % (i, d))
+
+                fakes = torch.stack(fakes)
+                print(fakes.size())
+                faked_std, fakes_mean = torch.std_mean(fakes, dim=0)
+                self.visuals.append(fakes_mean)
+                self.labels.append('mc_mean_%d' % d)
+                self.visuals.append(faked_std)
+                self.labels.append('mc_std_%d' % d)
 
 
     def get_image_paths(self):
