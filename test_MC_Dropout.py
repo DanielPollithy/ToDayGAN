@@ -25,7 +25,7 @@ opt = TestOptions().parse()
 opt.nThreads = 1   # test code only supports nThreads = 1
 opt.batchSize = 1  # test code only supports batchSize = 1
 
-dataset = DataLoader(opt)
+
 model = ComboGANModel(opt)
 visualizer = Visualizer(opt)
 # create website
@@ -74,6 +74,9 @@ if opt.netvlad:
     netvlad_mean_netvlads = []
     mahalanobis_distances = []
 
+    dataset = DataLoader(opt, img_list=robotcar_dataset.data['query_image_names'])
+else:
+    dataset = DataLoader(opt)
 
 for i, data in tqdm(enumerate(dataset), total=len(dataset)):
     if not opt.serial_test and i >= opt.how_many:
@@ -119,7 +122,8 @@ if opt.netvlad:
     plt.matshow(scores)
     plt.savefig("euclidean_similarities_images_mean.jpg")
 
-    pose_predictor = NearestNeighborPredictor(dataset=robotcar_dataset, network=None, ranks=ranks, log_images=False)
+    pose_predictor = NearestNeighborPredictor(dataset=robotcar_dataset, network=None, ranks=ranks, log_images=False,
+                                              output_filename=os.path.join(opt.results_dir, 'top_1_images_mean.txt'))
     pose_predictor.save(pose_predictor.run())
 
     # netvlad mean images matching
@@ -129,16 +133,23 @@ if opt.netvlad:
     ranks = np.argsort(-scores, axis=0)
     plt.matshow(scores)
     plt.savefig("euclidean_similarities_netvlad_mean.jpg")
+    pose_predictor = NearestNeighborPredictor(dataset=robotcar_dataset, network=None, ranks=ranks, log_images=False,
+                                              output_filename=os.path.join(opt.results_dir, 'top_1_mean_netvlads.txt'))
+    pose_predictor.save(pose_predictor.run())
 
     # netvlad mahal.
-    mahalanobis_distances = np.array(mahalanobis_distances)
+    mahalanobis_distances = np.array(mahalanobis_distances).T
     print('mahalanobis_distances', mahalanobis_distances.shape)
     # Replace NaNs with large distances
     mahalanobis_distances[np.isnan(mahalanobis_distances)] = np.nanmax(mahalanobis_distances)
     # Convert the distance matrix to a similarity matrix
-    log_reciprocal_similarities = np.log(np.nanmax(mahalanobis_distances) / mahalanobis_distances)
-    plt.matshow(log_reciprocal_similarities)
+    reciprocal_similarities = np.nanmax(mahalanobis_distances) / mahalanobis_distances
+    plt.matshow(reciprocal_similarities)
     plt.savefig("mahalanobis_similarities.jpg")
+    ranks = np.argsort(-reciprocal_similarities, axis=0)
+    pose_predictor = NearestNeighborPredictor(dataset=robotcar_dataset, network=None, ranks=ranks, log_images=False,
+                                              output_filename=os.path.join(opt.results_dir, 'top_1_mahalanobis.txt'))
+    pose_predictor.save(pose_predictor.run())
 
 webpage.save()
 

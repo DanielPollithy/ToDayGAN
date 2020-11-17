@@ -13,7 +13,6 @@ class NearestNeighborPredictor(predictor.PosePredictor):
     """
     def __init__(self, **kwargs):
         """Initialize base class attributes."""
-        kwargs['output_filename'] = '/home/poldan/S2DHM/results/robotcar/top_1_predictions.txt'
         super().__init__(**kwargs)
         del self._network
         self._filename_to_pose = \

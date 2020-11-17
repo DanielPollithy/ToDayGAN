@@ -4,9 +4,10 @@ from data.base_dataset import BaseDataset, get_transform
 from data.image_folder import make_dataset
 from PIL import Image
 import random
+import code
 
 class UnalignedDataset(BaseDataset):
-    def __init__(self, opt):
+    def __init__(self, opt, img_list=None):
         super(UnalignedDataset, self).__init__()
         self.opt = opt
         self.transform = get_transform(opt)
@@ -16,6 +17,8 @@ class UnalignedDataset(BaseDataset):
 
         self.paths = [sorted(make_dataset(d)) for d in self.dirs]
         self.sizes = [len(p) for p in self.paths]
+
+        code.interact(local=dict(globals(), **locals()))
 
     def load_image(self, dom, idx):
         path = self.paths[dom][idx]

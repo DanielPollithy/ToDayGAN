@@ -6,9 +6,9 @@ class DataLoader():
     def name(self):
         return 'DataLoader'
 
-    def __init__(self, opt):
+    def __init__(self, opt, img_list=None):
         self.opt = opt
-        self.dataset = UnalignedDataset(opt)
+        self.dataset = UnalignedDataset(opt, img_list=img_list)
         self.dataloader = torch.utils.data.DataLoader(
             self.dataset,
             batch_size=opt.batchSize,
