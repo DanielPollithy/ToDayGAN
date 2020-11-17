@@ -2,7 +2,7 @@
 """
 import os
 import numpy as np
-from models.netvlad.datasets.internal import read_model
+from .internal import read_model
 from ..pose_prediction.matrix_utils import assemble_matrix
 from ..pose_prediction.matrix_utils import quaternion_matrix
 from typing import Dict, Tuple, List
