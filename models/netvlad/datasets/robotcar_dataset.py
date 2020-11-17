@@ -8,7 +8,7 @@ class RobotCarDataset(BaseDataset):
     """RobotCar Dataset Loader.
     """
     def __init__(self, **kwargs):
-        super().__init__(**kwargs.__dict__)
+        super().__init__(**kwargs)
         self.load_intrinsics()
 
     def _glob_fn(self, root: str):
