@@ -5,3 +5,5 @@ visdom
 dominate
 tqdm
 matplotlib
+pandas
+opencv-python

@@ -5,7 +5,9 @@ import numpy as np
 from tqdm import tqdm
 from scipy.spatial import distance
 
+from models.netvlad.datasets.robotcar_dataset import RobotCarDataset
 from models.netvlad.pca import normalize
+from models.netvlad.pose_prediction.nearest_neighbor_predictor import NearestNeighborPredictor
 from options.test_options import TestOptions
 from data.data_loader import DataLoader
 from models.combogan_model import ComboGANModel
@@ -56,6 +58,18 @@ if opt.netvlad:
     print('Load PCA')
     with open(opt.netvlad_pca_dump, 'rb') as pickle_file:
         pca = pickle.load(pickle_file)
+
+    print('Load robotcar dataset')
+    rd = RobotCarDataset(name='robotcar',
+                         root='/net/skoll/storage/datasets/robotcar/robotcar/data_path/robotcar',
+                         image_folder='images_temp/',
+                         reference_sequences=['overcast-reference'],
+                         query_sequences=['night'],  # 'night-rain']
+                         nvm_model='/net/skoll/storage/datasets/robotcar/robotcar/data_path/robotcar/databases/all.nvm',
+                         triangulation_data_file='/home/poldan/S2DHM/data/triangulation/robotcar_triangulation.npz'
+                         )
+    robotcar_dataset = rd
+
     netvlad_mean_images = []
     netvlad_mean_netvlads = []
     mahalanobis_distances = []
@@ -85,6 +99,7 @@ for i, data in tqdm(enumerate(dataset), total=len(dataset)):
         sample_cov = np.cov(samples, rowvar=False)
         inv_cov = np.linalg.pinv(sample_cov)
         condition_number = np.linalg.norm(sample_cov) * np.linalg.norm(inv_cov)
+        print('condition_number', condition_number)
 
         # calc mahalanobis distance to every reference vector
         dists = []
@@ -103,6 +118,9 @@ if opt.netvlad:
     ranks = np.argsort(-scores, axis=0)
     plt.matshow(scores)
     plt.savefig("euclidean_similarities_images_mean.jpg")
+
+    pose_predictor = NearestNeighborPredictor(dataset=robotcar_dataset, network=None, ranks=ranks, log_images=False)
+    pose_predictor.save(pose_predictor.run())
 
     # netvlad mean images matching
     print('Euclidean Ranking: netvlad_mean_netvlads')
