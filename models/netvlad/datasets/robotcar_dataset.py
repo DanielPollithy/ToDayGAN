@@ -2,6 +2,7 @@ import numpy as np
 from glob import glob
 from pathlib import Path
 from .base_dataset import BaseDataset
+from . import internal
 
 
 class RobotCarDataset(BaseDataset):

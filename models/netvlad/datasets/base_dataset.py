@@ -9,6 +9,7 @@ from typing import List
 from pathlib import Path
 from collections import namedtuple
 from .model_parser import ModelParser
+from . import internal
 
 sys.path.insert(0, 'datasets/')
 
