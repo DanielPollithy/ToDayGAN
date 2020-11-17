@@ -107,13 +107,11 @@ class ComboGANModel(BaseModel):
                             self.labels.append('mc_%s_rec_%d' % (i, d))
 
                 fakes = torch.stack(fakes)
-                print(fakes.size())
                 faked_std, fakes_mean = torch.std_mean(fakes, dim=0)
                 self.visuals.append(fakes_mean)
                 self.labels.append('mc_mean_%d' % d)
                 self.visuals.append(faked_std)
                 self.labels.append('mc_std_%d' % d)
-
 
     def get_image_paths(self):
         return self.image_paths

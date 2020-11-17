@@ -128,6 +128,7 @@ class Visualizer():
         ims = []
         txts = []
         links = []
+        save_paths = []
 
         for label, image_numpy in visuals.items():
             image_name = '%s_%s.jpg' % (name, label)
@@ -137,7 +138,10 @@ class Visualizer():
             ims.append(image_name)
             txts.append(label)
             links.append(image_name)
+            save_paths.append(save_path)
         webpage.add_images(ims, txts, links, width=self.win_size)
+
+        return save_paths
 
     def save_image_matrix(self, visuals_list, save_path):
         images_list = []

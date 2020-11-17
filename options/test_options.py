@@ -19,3 +19,13 @@ class TestOptions(BaseOptions):
         self.parser.add_argument('--reconstruct', action='store_true', help='do reconstructions of images during testing')
 
         self.parser.add_argument('--show_matrix', action='store_true', help='visualize images in a matrix format as well')
+
+        self.parser.add_argument('--netvlad', action='store_true', help='Compute embeddings')
+        self.parser.add_argument('--netvlad_checkpoint', type=str,
+                                 default='/home/poldan/S2DHM/checkpoints/netvlad_no_pretraining/checkpoint.pth.tar',
+                                 help='Archive containing checkpoint of VGG-16 and NetVLAD')
+        self.parser.add_argument('--netvlad_pca_dump', type=str, default='/home/poldan/S2DHM/pca.pkl',
+                                 help='Pickle dump of PCA trained on the reference images')
+        self.parser.add_argument('--netvlad_ref_descr', type=str,
+                                 default='/home/poldan/S2DHM/data/ranks/query_descriptors.tsv',
+                                 help='np array of NetVLAD descriptors for the reference images')

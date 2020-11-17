@@ -1,10 +1,22 @@
+import pickle
 import time
 import os
+import numpy as np
+from tqdm import tqdm
+from scipy.spatial import distance
+
+from models.netvlad.pca import normalize
 from options.test_options import TestOptions
 from data.data_loader import DataLoader
 from models.combogan_model import ComboGANModel
 from util.visualizer import Visualizer
 from util import html
+
+import matplotlib.pyplot as plt
+
+from sklearn.decomposition import PCA
+
+from models.netvlad.network import ImageRetrievalModel
 
 
 opt = TestOptions().parse()
@@ -34,23 +46,81 @@ for m in model.netG.encoders + model.netG.decoders:
 
 monte_carlo_samples = opt.monte_carlo_samples
 
-# test
-for i, data in enumerate(dataset):
+if opt.netvlad:
+    print('Load NetVLAD')
+    netvlad_model = ImageRetrievalModel(
+        opt.netvlad_checkpoint,
+        device=-1)
+    print('Load pre-computed reference NetVLAD descriptors')
+    netvlad_ref_descriptors = np.loadtxt(opt.netvlad_ref_descr)
+    print('Load PCA')
+    with open(opt.netvlad_pca_dump, 'rb') as pickle_file:
+        pca = pickle.load(pickle_file)
+    netvlad_mean_images = []
+    netvlad_mean_netvlads = []
+    mahalanobis_distances = []
+
+
+for i, data in tqdm(enumerate(dataset), total=len(dataset)):
     if not opt.serial_test and i >= opt.how_many:
         break
     model.set_input(data)
     model.test(monte_carlo_samples=monte_carlo_samples)
     visuals = model.get_current_visuals(testing=True)
     img_path = model.get_image_paths()
-    print('process image... %s' % img_path)
-    visualizer.save_images(webpage, visuals, img_path)
+    paths = visualizer.save_images(webpage, visuals, img_path)
 
-    if opt.show_matrix:
-        vis_buffer.append(visuals)
-        if (i+1) % opt.n_domains == 0:
-            save_path = os.path.join(web_dir, 'mat_%d.png' % (i//opt.n_domains))
-            visualizer.save_image_matrix(vis_buffer, save_path)
-            vis_buffer.clear()
+    # Compute NetVLAD embeddings for the images
+    if opt.netvlad:
+        # Only consider the 'mc_' samples and the 'mc_mean' image
+        paths = [path for path in paths if ('real' not in path and 'mc_std' not in path)]
+        embeddings = netvlad_model.compute_embedding(paths)
+        embeddings = normalize(pca.transform(normalize(embeddings)))
+        # NetVLAD of the mean image
+        netvlad_mean_images.append(embeddings[['mc_mean' in path for path in paths]])
+        # Mean of the samples' NetVLADs
+        samples = embeddings[['mc_mean' not in path for path in paths]]
+        sample_mean = np.mean(samples, axis=0)
+        netvlad_mean_netvlads.append(sample_mean)
+        sample_cov = np.cov(samples, rowvar=False)
+        inv_cov = np.linalg.pinv(sample_cov)
+        condition_number = np.linalg.norm(sample_cov) * np.linalg.norm(inv_cov)
+
+        # calc mahalanobis distance to every reference vector
+        dists = []
+        for ref in range(netvlad_ref_descriptors.shape[0]):  # Vectorize!
+            y = netvlad_ref_descriptors[ref]
+            m_d = distance.mahalanobis(sample_mean, y, inv_cov)
+            dists.append(m_d)
+        mahalanobis_distances.append(dists)
+
+
+if opt.netvlad:
+    # netvlad mean images matching
+    print('Euclidean Ranking: netvlad_mean_images')
+    netvlad_mean_images = np.vstack(netvlad_mean_images)
+    scores = np.dot(netvlad_ref_descriptors, netvlad_mean_images.T)
+    ranks = np.argsort(-scores, axis=0)
+    plt.matshow(scores)
+    plt.savefig("euclidean_similarities_images_mean.jpg")
+
+    # netvlad mean images matching
+    print('Euclidean Ranking: netvlad_mean_netvlads')
+    netvlad_mean_netvlads = np.vstack(netvlad_mean_netvlads)
+    scores = np.dot(netvlad_ref_descriptors, netvlad_mean_netvlads.T)
+    ranks = np.argsort(-scores, axis=0)
+    plt.matshow(scores)
+    plt.savefig("euclidean_similarities_netvlad_mean.jpg")
+
+    # netvlad mahal.
+    mahalanobis_distances = np.array(mahalanobis_distances)
+    print('mahalanobis_distances', mahalanobis_distances.shape)
+    # Replace NaNs with large distances
+    mahalanobis_distances[np.isnan(mahalanobis_distances)] = np.nanmax(mahalanobis_distances)
+    # Convert the distance matrix to a similarity matrix
+    log_reciprocal_similarities = np.log(np.nanmax(mahalanobis_distances) / mahalanobis_distances)
+    plt.matshow(log_reciprocal_similarities)
+    plt.savefig("mahalanobis_similarities.jpg")
 
 webpage.save()
 
