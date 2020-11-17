@@ -22,10 +22,10 @@ class TestOptions(BaseOptions):
 
         self.parser.add_argument('--netvlad', action='store_true', help='Compute embeddings')
         self.parser.add_argument('--netvlad_checkpoint', type=str,
-                                 default='/home/poldan/S2DHM/checkpoints/netvlad_no_pretraining/checkpoint.pth.tar',
+                                 default='./netvlad_data/pittsburgh30k/checkpoint.pth.tar',
                                  help='Archive containing checkpoint of VGG-16 and NetVLAD')
-        self.parser.add_argument('--netvlad_pca_dump', type=str, default='/home/poldan/S2DHM/pca.pkl',
+        self.parser.add_argument('--netvlad_pca_dump', type=str, default='./netvlad_data/pittsburgh30k/pca.pkl',
                                  help='Pickle dump of PCA trained on the reference images')
         self.parser.add_argument('--netvlad_ref_descr', type=str,
-                                 default='/home/poldan/S2DHM/data/ranks/query_descriptors.tsv',
+                                 default='./netvlad_data/pittsburgh30k/reference_descriptors.tsv',
                                  help='np array of NetVLAD descriptors for the reference images')
