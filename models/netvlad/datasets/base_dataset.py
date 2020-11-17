@@ -62,7 +62,7 @@ class BaseDataset():
         self.load_reference_image_names()
         self.load_query_image_names()
         self.load_reference_camera_poses()
-        self.load_triangulation_data()
+        # self.load_triangulation_data()
 
     def _glob_fn(self, root: str):
         """Glob pattern to fetch images."""
