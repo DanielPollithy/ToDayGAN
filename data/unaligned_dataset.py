@@ -18,7 +18,23 @@ class UnalignedDataset(BaseDataset):
         self.paths = [sorted(make_dataset(d)) for d in self.dirs]
         self.sizes = [len(p) for p in self.paths]
 
-        code.interact(local=dict(globals(), **locals()))
+        if img_list:
+            # sort the list according to the img_list
+            only_name = lambda p: os.path.split(p)[-1]
+            img_list_names = list(map(only_name, img_list))
+            night_query_names = list(map(only_name, self.paths[1]))
+            # check that all images are present
+            assert set(night_query_names) == set(img_list_names)
+
+            new_list = []
+            new_prefix = self.paths[1][0].rsplit('/', maxsplit=1)[0]
+            for i, img_name in enumerate(img_list_names):
+                new_list.append(os.path.join(new_prefix, img_name))
+
+            assert set(new_list) == set(self.paths[1])
+
+            # Now the test images have the same sorting as the query list
+            self.paths[1] = new_list
 
     def load_image(self, dom, idx):
         path = self.paths[dom][idx]
