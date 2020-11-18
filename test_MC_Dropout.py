@@ -52,7 +52,7 @@ if opt.netvlad:
     print('Load NetVLAD')
     netvlad_model = ImageRetrievalModel(
         opt.netvlad_checkpoint,
-        device=-1)
+        device=int(opt.gpu_ids))
     print('Load pre-computed reference NetVLAD descriptors')
     netvlad_ref_descriptors = np.loadtxt(opt.netvlad_ref_descr)
     print('Load PCA')
@@ -93,8 +93,10 @@ for i, data in tqdm(enumerate(dataset), total=len(dataset)):
         paths = [path for path in paths if ('real' not in path and 'mc_std' not in path)]
         embeddings = netvlad_model.compute_embedding(paths)
         embeddings = normalize(pca.transform(normalize(embeddings)))
+
         # NetVLAD of the mean image
         netvlad_mean_images.append(embeddings[['mc_mean' in path for path in paths]])
+
         # Mean of the samples' NetVLADs
         samples = embeddings[['mc_mean' not in path for path in paths]]
         sample_mean = np.mean(samples, axis=0)
@@ -144,7 +146,7 @@ if opt.netvlad:
     mahalanobis_distances[np.isnan(mahalanobis_distances)] = np.nanmax(mahalanobis_distances)
     # Convert the distance matrix to a similarity matrix
     reciprocal_similarities = np.nanmax(mahalanobis_distances) / mahalanobis_distances
-    plt.matshow(reciprocal_similarities)
+    plt.matshow((reciprocal_similarities - np.mean(reciprocal_similarities))/np.std(reciprocal_similarities))
     plt.savefig("mahalanobis_similarities.jpg")
     ranks = np.argsort(-reciprocal_similarities, axis=0)
     pose_predictor = NearestNeighborPredictor(dataset=robotcar_dataset, network=None, ranks=ranks, log_images=False,
