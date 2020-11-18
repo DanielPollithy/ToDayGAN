@@ -92,7 +92,8 @@ for i, data in tqdm(enumerate(dataset), total=len(dataset)):
         # Only consider the 'mc_' samples and the 'mc_mean' image
         paths = [path for path in paths if ('real' not in path and 'mc_std' not in path)]
         embeddings = netvlad_model.compute_embedding(paths)
-        embeddings = normalize(pca.transform(normalize(embeddings)))
+        if not opt.no_pca:
+            embeddings = normalize(pca.transform(normalize(embeddings)))
 
         # NetVLAD of the mean image
         netvlad_mean_images.append(embeddings[['mc_mean' in path for path in paths]])
