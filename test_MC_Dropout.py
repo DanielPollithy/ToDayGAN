@@ -52,7 +52,7 @@ if opt.netvlad:
     print('Load NetVLAD')
     netvlad_model = ImageRetrievalModel(
         opt.netvlad_checkpoint,
-        device=int(opt.gpu_ids))
+        device=opt.gpu_ids[0] if len(opt.gpu_ids) > 0 else -1)
     print('Load pre-computed reference NetVLAD descriptors')
     netvlad_ref_descriptors = np.loadtxt(opt.netvlad_ref_descr)
     print('Load PCA')
