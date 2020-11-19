@@ -93,7 +93,8 @@ class ComboGANModel(BaseModel):
                 fakes = []
                 for i in range(monte_carlo_samples):
                     encoded = self.netG.encode(self.real_A, self.DA)
-                    encoded_flipped = self.netG.encode(self.real_A[:, :, ::-1, :], self.DA)
+                    if self.opt.flip_export:
+                        encoded_flipped = self.netG.encode(torch.flip(self.real_A, [3]), self.DA)
                     for d in range(self.n_domains):
                         if d == self.DA and not self.opt.autoencode:
                             continue
@@ -103,7 +104,9 @@ class ComboGANModel(BaseModel):
                         self.labels.append('mc_%s_fake_%d' % (i, d))
 
                         if self.opt.flip_export:
-                            self.visuals.append(self.netG.decode(encoded_flipped, d)[:, :, ::-1, :])
+                            fake_flip = torch.flip(self.netG.decode(encoded_flipped, d), [3])
+                            self.visuals.append(fake_flip)
+                            fakes.append(fake_flip)
                             self.labels.append('mc_%s_flip_fake_%d' % (i, d))
 
                         if self.opt.reconstruct:
