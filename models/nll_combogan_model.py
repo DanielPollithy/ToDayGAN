@@ -157,13 +157,21 @@ class NLLComboGANModel(BaseModel):
         self.rec_A = self.netG.decode(rec_encoded_A, self.DA)
         self.rec_A_uncertainty = self.rec_A[:, -1:, ...] * self.unc_constant
         self.rec_A = self.rec_A[:, :-1, ...]
-        self.loss_cycle[self.DA] = self.criterionCycle(self.rec_A, self.real_A, self.rec_A_uncertainty)
+        if self.opt.sum_nll_uncertainties:
+            self.loss_cycle[self.DA] = self.criterionCycle(self.rec_A, self.real_A,
+                                                           self.rec_A_uncertainty + self.fake_B_uncertainty)
+        else:
+            self.loss_cycle[self.DA] = self.criterionCycle(self.rec_A, self.real_A, self.rec_A_uncertainty)
         # Backward cycle loss
         rec_encoded_B = self.netG.encode(self.fake_A, self.DA)
         self.rec_B = self.netG.decode(rec_encoded_B, self.DB)
         self.rec_B_uncertainty = self.rec_B[:, -1:, ...] * self.unc_constant
         self.rec_B = self.rec_B[:, :-1, ...]
-        self.loss_cycle[self.DB] = self.criterionCycle(self.rec_B, self.real_B, self.rec_B_uncertainty)
+        if self.opt.sum_nll_uncertainties:
+            self.loss_cycle[self.DB] = self.criterionCycle(self.rec_B, self.real_B,
+                                                           self.rec_B_uncertainty + self.fake_A_uncertainty)
+        else:
+            self.loss_cycle[self.DB] = self.criterionCycle(self.rec_B, self.real_B, self.rec_B_uncertainty)
 
         # Optional cycle loss on encoding space
         if self.lambda_enc > 0:

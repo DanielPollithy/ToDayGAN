@@ -50,6 +50,8 @@ class BaseOptions():
 
         self.parser.add_argument('--monte_carlo_samples', type=int, default=3,
                                  help='How many forward passes?')
+        self.parser.add_argument('--sum_nll_uncertainties', action='store_true',
+                                 help='Sum the aleatoric uncertainties of both generators in a cycle.')
 
         self.initialized = True
 
