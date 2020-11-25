@@ -83,7 +83,6 @@ class BBBComboGANModel(BaseModel):
             self.visuals = [self.real_A]
             self.labels = ['real_%d' % self.DA]
 
-
             if monte_carlo_samples <= 1:
                 # cache encoding to not repeat it everytime
                 encoded, kl = self.netG.encode(self.real_A, self.DA)
@@ -101,6 +100,8 @@ class BBBComboGANModel(BaseModel):
                 fakes = []
                 for i in range(monte_carlo_samples):
                     encoded, kl = self.netG.encode(self.real_A, self.DA)
+                    if self.opt.flip_export:
+                        encoded_flipped = self.netG.encode(torch.flip(self.real_A, [3]), self.DA)
                     for d in range(self.n_domains):
                         if d == self.DA and not self.opt.autoencode:
                             continue
@@ -108,17 +109,24 @@ class BBBComboGANModel(BaseModel):
                         fakes.append(fake)
                         self.visuals.append(fake)
                         self.labels.append('mc_%s_fake_%d' % (i, d))
+
+                        if self.opt.flip_export:
+                            fake_flip = torch.flip(self.netG.decode(encoded_flipped, d), [3])
+                            self.visuals.append(fake_flip)
+                            fakes.append(fake_flip)
+                            self.labels.append('mc_%s_flip_fake_%d' % (i, d))
+
                         if self.opt.reconstruct:
                             rec, kl = self.netG.forward(fake, d, self.DA)
                             self.visuals.append(rec)
                             self.labels.append('mc_%s_rec_%d' % (i, d))
+
                 fakes = torch.stack(fakes)
                 faked_std, fakes_mean = torch.std_mean(fakes, dim=0)
                 self.visuals.append(fakes_mean)
                 self.labels.append('mc_mean_%d' % d)
                 self.visuals.append(faked_std)
                 self.labels.append('mc_std_%d' % d)
-
 
     def get_image_paths(self):
         return self.image_paths
