@@ -111,7 +111,8 @@ class BBBComboGANModel(BaseModel):
                         self.labels.append('mc_%s_fake_%d' % (i, d))
 
                         if self.opt.flip_export:
-                            fake_flip = torch.flip(self.netG.decode(encoded_flipped, d), [3])
+                            output_flipped, kl = self.netG.decode(encoded_flipped, d)
+                            fake_flip = torch.flip(output_flipped, [3])
                             self.visuals.append(fake_flip)
                             fakes.append(fake_flip)
                             self.labels.append('mc_%s_flip_fake_%d' % (i, d))
