@@ -101,7 +101,7 @@ class BBBComboGANModel(BaseModel):
                 for i in range(monte_carlo_samples):
                     encoded, kl = self.netG.encode(self.real_A, self.DA)
                     if self.opt.flip_export:
-                        encoded_flipped = self.netG.encode(torch.flip(self.real_A, [3]), self.DA)
+                        encoded_flipped, kl = self.netG.encode(torch.flip(self.real_A, [3]), self.DA)
                     for d in range(self.n_domains):
                         if d == self.DA and not self.opt.autoencode:
                             continue
