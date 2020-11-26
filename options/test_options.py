@@ -21,6 +21,8 @@ class TestOptions(BaseOptions):
         self.parser.add_argument('--show_matrix', action='store_true', help='visualize images in a matrix format as well')
 
         self.parser.add_argument('--netvlad', action='store_true', help='Compute embeddings')
+        self.parser.add_argument('--diagonal_cov', action='store_true', default=False, help='Use diagonal covariance '
+                                                                                            'for Mahalanobis')
         self.parser.add_argument('--no_pca', action='store_true', default=False, help='Disable PCA')
         self.parser.add_argument('--flip_export', action='store_true', default=False, help='Flip the sampled images')
         self.parser.add_argument('--netvlad_checkpoint', type=str,

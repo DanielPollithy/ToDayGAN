@@ -89,16 +89,16 @@ for i, data in tqdm(enumerate(dataset), total=len(dataset)):
         sample_mean = np.mean(samples, axis=0)
         netvlad_mean_netvlads.append(sample_mean)
 
-
         sample_cov = np.cov(samples, rowvar=False)
-        # only diagonal
-        # sample_cov_diag = np.diagonal(sample_cov).copy()
-        # cheap inversion
-        # inv_cov = 1.0 / np.diag(sample_cov_diag)
-        inv_cov = np.linalg.pinv(sample_cov)
+        if opt.diagonal_cov:
+            # only diagonal
+            sample_cov = np.diagonal(sample_cov)
+            # cheap inversion
+            inv_cov = 1.0 / np.diag(sample_cov)
+        else:
+            inv_cov = np.linalg.pinv(sample_cov)
         condition_number = np.linalg.norm(sample_cov) * np.linalg.norm(inv_cov)
         print('condition_number', condition_number)
-
 
         # calc mahalanobis distance to every reference vector
         dists = []
