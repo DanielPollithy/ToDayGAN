@@ -59,6 +59,7 @@ if opt.netvlad:
     netvlad_mean_images = []
     netvlad_mean_netvlads = []
     mahalanobis_distances = []
+    sed_distances = []
 
     dataset = DataLoader(opt, img_list=robotcar_dataset.data['query_image_names'])
 else:
@@ -89,24 +90,23 @@ for i, data in tqdm(enumerate(dataset), total=len(dataset)):
         sample_mean = np.mean(samples, axis=0)
         netvlad_mean_netvlads.append(sample_mean)
 
+        # Mahalanobis
         sample_cov = np.cov(samples, rowvar=False)
-        if opt.diagonal_cov:
-            # only diagonal
-            sample_cov = np.diagonal(sample_cov)
-            # cheap inversion
-            inv_cov = 1.0 / np.diag(sample_cov)
-        else:
-            inv_cov = np.linalg.pinv(sample_cov)
+        inv_cov = np.linalg.pinv(sample_cov)
         condition_number = np.linalg.norm(sample_cov) * np.linalg.norm(inv_cov)
         print('condition_number', condition_number)
 
-        # calc mahalanobis distance to every reference vector
-        dists = []
+        # calc mahalanobis and SED distance to every reference vector
+        mahal_dists = []
+        sed_dists = []
         for ref in range(netvlad_ref_descriptors.shape[0]):  # Vectorize!
-            y = netvlad_ref_descriptors[ref]
-            m_d = distance.mahalanobis(sample_mean, y, inv_cov)
-            dists.append(m_d)
-        mahalanobis_distances.append(dists)
+            m_d = distance.mahalanobis(sample_mean, netvlad_ref_descriptors[ref], inv_cov)
+            mahal_dists.append(m_d)
+            # Standardized Euclidean Distance (SED)
+            sed_dists.append(distance.seuclidean(sample_mean, netvlad_ref_descriptors[ref], np.var(samples, axis=0)))
+        mahalanobis_distances.append(mahal_dists)
+        sed_distances.append(sed_dists)
+
 
 
 if opt.netvlad:
@@ -145,6 +145,20 @@ if opt.netvlad:
     ranks = np.argsort(-reciprocal_similarities, axis=0)
     pose_predictor = NearestNeighborPredictor(dataset=robotcar_dataset, network=None, ranks=ranks, log_images=False,
                                               output_filename=os.path.join(opt.results_dir, 'top_1_mahalanobis.txt'))
+    pose_predictor.save(pose_predictor.run())
+
+    # SED distances
+    sed_distances = np.array(sed_distances).T
+    print('sed_distances', sed_distances.shape)
+    # Replace NaNs with large distances
+    sed_distances[np.isnan(sed_distances)] = np.nanmax(sed_distances)
+    # Convert the distance matrix to a similarity matrix
+    reciprocal_similarities = np.nanmax(sed_distances) / sed_distances
+    plt.matshow((reciprocal_similarities - np.mean(reciprocal_similarities)) / np.std(reciprocal_similarities))
+    plt.savefig("sed_similarities.jpg")
+    ranks = np.argsort(-reciprocal_similarities, axis=0)
+    pose_predictor = NearestNeighborPredictor(dataset=robotcar_dataset, network=None, ranks=ranks, log_images=False,
+                                              output_filename=os.path.join(opt.results_dir, 'top_1_sed.txt'))
     pose_predictor.save(pose_predictor.run())
 
 webpage.save()
