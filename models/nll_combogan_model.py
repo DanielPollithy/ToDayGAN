@@ -84,23 +84,33 @@ class NLLComboGANModel(BaseModel):
 
     def test(self):
         with torch.no_grad():
+            fakes = []
             self.visuals = [self.real_A]
             self.labels = ['real_%d' % self.DA]
 
             # cache encoding to not repeat it everytime
             encoded = self.netG.encode(self.real_A, self.DA)
+            if self.opt.flip_export:
+                encoded_flipped = self.netG.encode(torch.flip(self.real_A, [3]), self.DA)
             for d in range(self.n_domains):
                 if d == self.DA and not self.opt.autoencode:
                     continue
                 fake = self.netG.decode(encoded, d)
                 fake_uncertainty = fake[:, -1:, ...] * self.unc_constant
                 fake = fake[:, :-1, ...]
-                self.visuals.append( fake )
-                self.labels.append( 'fake_%d' % d )
+                fakes.append(fake)
+                self.visuals.append(fake)
+                self.labels.append('fake_%d' % d)
                 self.visuals.append(self._normalize_unc_img(fake_uncertainty))
-                self.labels.append('fake_%d_uncertainty' % d)
-                #
-                np.save("nll_unc_fake.npy", fake_uncertainty.cpu().detach().numpy())
+                self.labels.append('fake_%d_std' % d)
+
+                if self.opt.flip_export:
+                    output_flipped = self.netG.decode(encoded_flipped, d)
+                    fake_flip = torch.flip(output_flipped, [3])
+                    self.visuals.append(fake_flip)
+                    fakes.append(fake_flip)
+                    self.labels.append('fake_flip_%d' % d)
+
                 if self.opt.reconstruct:
                     rec = self.netG.forward(fake, d, self.DA)
                     rec_uncertainty = rec[:, -1:, ...] * self.unc_constant
@@ -108,9 +118,18 @@ class NLLComboGANModel(BaseModel):
                     self.visuals.append( rec )
                     self.labels.append( 'rec_%d' % d )
                     self.visuals.append(self._normalize_unc_img(rec_uncertainty))
-                    np.save("nll_unc_reco.npy", rec_uncertainty.cpu().detach().numpy())
-                    self.labels.append('rec_%d_uncertainty' % d)
-        time.sleep(5)
+                    self.labels.append('rec_%d_std' % d)
+
+                    # sum both uncertainties
+                    self.visuals.append(self._normalize_unc_img(0.5 * (rec_uncertainty + fake_uncertainty)))
+                    self.labels.append('sum_%d_std' % d)
+
+        fakes = torch.stack(fakes)
+        faked_std, fakes_mean = torch.std_mean(fakes, dim=0)
+        self.visuals.append(fakes_mean)
+        self.labels.append('mean_%d' % d)
+        self.visuals.append(faked_std)
+        self.labels.append('std_%d' % d)
 
     def get_image_paths(self):
         return self.image_paths
@@ -218,9 +237,10 @@ class NLLComboGANModel(BaseModel):
         return OrderedDict([('D', D_losses), ('G', G_losses), ('Cyc', cyc_losses)])
 
     def _normalize_unc_img(self, img):
-        img = torch.exp(img)
-        img = img / torch.std(img)
-        img = img - torch.mean(img)
+        # squash the standard deviation between 0 and 1.  1 is the maximum sample variance on the interval [-1,+1]
+        img = torch.sqrt(torch.exp(img/5.0))
+        img = (img - torch.min(img))
+        img = img/torch.max(img)
         return img
 
     def get_current_visuals(self, testing=False):

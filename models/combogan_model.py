@@ -116,7 +116,6 @@ class ComboGANModel(BaseModel):
 
                 fakes = torch.stack(fakes)
                 faked_std, fakes_mean = torch.std_mean(fakes, dim=0)
-                # np.save("mcd_std.npy", faked_std.cpu().detach().numpy())
                 self.visuals.append(fakes_mean)
                 self.labels.append('mc_mean_%d' % d)
                 self.visuals.append(faked_std)

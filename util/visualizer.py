@@ -1,3 +1,6 @@
+import io
+import matplotlib.pyplot as plt
+
 import numpy as np
 import os
 import ntpath
@@ -133,7 +136,20 @@ class Visualizer():
         for label, image_numpy in visuals.items():
             image_name = '%s_%s.jpg' % (name, label)
             save_path = os.path.join(image_dir, image_name)
-            util.save_image(image_numpy, save_path)
+            if 'std' in label:
+                print('heatmap')
+                # use pyplot for colorcoding
+                plt.imshow(image_numpy, vmin=0, vmax=2)
+                plt.axis('off')
+                io_buf = io.BytesIO()
+                plt.savefig(io_buf, format='raw', bbox_inches='tight')  # , dpi=DPI)
+                io_buf.seek(0)
+                img_arr = np.reshape(np.frombuffer(io_buf.getvalue(), dtype=np.uint8),
+                                     newshape=(int(plt.gcf().bbox.bounds[3]), int(plt.gcf().bbox.bounds[2]), -1))
+                io_buf.close()
+                util.save_image(img_arr, save_path)
+            else:
+                util.save_image(image_numpy, save_path)
 
             ims.append(image_name)
             txts.append(label)
