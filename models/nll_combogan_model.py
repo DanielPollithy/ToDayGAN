@@ -101,7 +101,7 @@ class NLLComboGANModel(BaseModel):
                 fakes.append(fake)
                 self.visuals.append(fake)
                 self.labels.append('fake_%d' % d)
-                self.visuals.append(self._normalize_unc_img(fake_uncertainty.copy()))
+                self.visuals.append(self._normalize_unc_img(fake_uncertainty.clone()))
                 self.labels.append('fake_%d_std' % d)
 
                 if self.opt.flip_export:
@@ -117,7 +117,7 @@ class NLLComboGANModel(BaseModel):
                     rec = rec[:, :-1, ...]
                     self.visuals.append( rec )
                     self.labels.append( 'rec_%d' % d )
-                    self.visuals.append(self._normalize_unc_img(rec_uncertainty.copy()))
+                    self.visuals.append(self._normalize_unc_img(rec_uncertainty.clone()))
                     self.labels.append('rec_%d_std' % d)
 
                     # sum both uncertainties
