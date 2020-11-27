@@ -137,17 +137,19 @@ class Visualizer():
             image_name = '%s_%s.jpg' % (name, label)
             save_path = os.path.join(image_dir, image_name)
             if 'std' in label:
-                print('heatmap')
-                # use pyplot for colorcoding
-                plt.imshow(image_numpy, vmin=0, vmax=2)
-                plt.axis('off')
-                io_buf = io.BytesIO()
-                plt.savefig(io_buf, format='raw', bbox_inches='tight')  # , dpi=DPI)
-                io_buf.seek(0)
-                img_arr = np.reshape(np.frombuffer(io_buf.getvalue(), dtype=np.uint8),
-                                     newshape=(int(plt.gcf().bbox.bounds[3]), int(plt.gcf().bbox.bounds[2]), -1))
-                io_buf.close()
-                util.save_image(img_arr, save_path)
+                # print('heatmap', image_numpy.shape)
+                # use pyplot for colorcoding. The values are in 0.5*255.0 to 1.0*255.0
+                image_numpy = np.mean(image_numpy, axis=-1)
+                image_numpy -= 0.5*255.0
+                image_numpy *= 2
+                image_numpy /= 250.0
+                # print(np.min(image_numpy), np.max(image_numpy), np.mean(image_numpy))
+                # print(image_numpy.shape)
+                plt.imshow(image_numpy , vmin=0, vmax=1)
+                plt.gca().set_axis_off()
+                plt.margins(0,0)
+                # plt.colorbar()
+                plt.savefig(save_path, bbox_inches='tight', pad_inches=0)
             else:
                 util.save_image(image_numpy, save_path)
 
