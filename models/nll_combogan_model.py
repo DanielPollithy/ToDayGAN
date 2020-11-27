@@ -1,4 +1,5 @@
 import numpy as np
+import time
 import torch
 from collections import OrderedDict
 import util.util as util
@@ -98,6 +99,8 @@ class NLLComboGANModel(BaseModel):
                 self.labels.append( 'fake_%d' % d )
                 self.visuals.append(self._normalize_unc_img(fake_uncertainty))
                 self.labels.append('fake_%d_uncertainty' % d)
+                #
+                np.save("nll_unc_fake.npy", fake_uncertainty.cpu().detach().numpy())
                 if self.opt.reconstruct:
                     rec = self.netG.forward(fake, d, self.DA)
                     rec_uncertainty = rec[:, -1:, ...] * self.unc_constant
@@ -105,7 +108,9 @@ class NLLComboGANModel(BaseModel):
                     self.visuals.append( rec )
                     self.labels.append( 'rec_%d' % d )
                     self.visuals.append(self._normalize_unc_img(rec_uncertainty))
+                    np.save("nll_unc_reco.npy", rec_uncertainty.cpu().detach().numpy())
                     self.labels.append('rec_%d_uncertainty' % d)
+        time.sleep(5)
 
     def get_image_paths(self):
         return self.image_paths
