@@ -101,7 +101,7 @@ class NLLComboGANModel(BaseModel):
                 fakes.append(fake)
                 self.visuals.append(fake)
                 self.labels.append('fake_%d' % d)
-                self.visuals.append(self._normalize_unc_img(fake_uncertainty.clone()))
+                self.visuals.append(self._normalize_unc_img(fake_uncertainty))
                 self.labels.append('fake_%d_std' % d)
 
                 if self.opt.flip_export:
@@ -115,14 +115,28 @@ class NLLComboGANModel(BaseModel):
                     rec = self.netG.forward(fake, d, self.DA)
                     rec_uncertainty = rec[:, -1:, ...] * self.unc_constant
                     rec = rec[:, :-1, ...]
-                    self.visuals.append( rec )
-                    self.labels.append( 'rec_%d' % d )
-                    self.visuals.append(self._normalize_unc_img(rec_uncertainty.clone()))
+                    self.visuals.append(rec)
+                    self.labels.append('rec_%d' % d)
+                    self.visuals.append(self._normalize_unc_img(rec_uncertainty))
                     self.labels.append('rec_%d_std' % d)
 
                     # sum both uncertainties
                     self.visuals.append(self._normalize_unc_img(0.5 * (rec_uncertainty + fake_uncertainty)))
                     self.labels.append('sum_%d_std' % d)
+
+                # make uncertain regions black
+                threshold = -7
+                sum_mask = (rec_uncertainty + fake_uncertainty) < threshold
+                input_img = self.real_A.masked_fill(sum_mask, 0.0)
+                encoded = self.netG.encode(input_img, self.DA)
+                fake = self.netG.decode(encoded, d)
+                fake_uncertainty = fake[:, -1:, ...] * self.unc_constant
+                fake = fake[:, :-1, ...]
+                fakes.append(fake)
+                self.visuals.append(fake)
+                self.labels.append('black_%d' % d)
+                self.visuals.append(self._normalize_unc_img(fake_uncertainty))
+                self.labels.append('black_%d_std' % d)
 
         fakes = torch.stack(fakes)
         faked_std, fakes_mean = torch.std_mean(fakes, dim=0)
