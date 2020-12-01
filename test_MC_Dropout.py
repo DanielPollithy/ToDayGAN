@@ -82,7 +82,7 @@ for i, data in tqdm(enumerate(dataset), total=len(dataset)):
     if not opt.serial_test and i >= opt.how_many:
         break
     model.set_input(data)
-    model.test(monte_carlo_samples=monte_carlo_samples)
+    model.test(monte_carlo_samples=monte_carlo_samples, sampling=True)
     visuals = model.get_current_visuals(testing=True)
     img_path = model.get_image_paths()
     paths = visualizer.save_images(webpage, visuals, img_path)

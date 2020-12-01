@@ -71,12 +71,12 @@ class ComboGANModel(BaseModel):
             self.DB = input['DB'][0]
         self.image_paths = input['path']
 
-    def test(self, monte_carlo_samples=1):
+    def test(self, monte_carlo_samples=1, sampling=False):
         with torch.no_grad():
             self.visuals = [self.real_A]
             self.labels = ['real_%d' % self.DA]
 
-            if monte_carlo_samples <= 1:
+            if monte_carlo_samples <= 1 and not sampling:
                 # cache encoding to not repeat it everytime
                 encoded = self.netG.encode(self.real_A, self.DA)
                 for d in range(self.n_domains):
