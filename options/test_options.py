@@ -31,3 +31,9 @@ class TestOptions(BaseOptions):
         self.parser.add_argument('--netvlad_ref_descr', type=str,
                                  default='./netvlad_data/pittsburgh30k/reference_descriptors.tsv',
                                  help='np array of NetVLAD descriptors for the reference images')
+
+        # blurring for NLL-CycleGAN
+        self.parser.add_argument('--blur_thresh', type=int, default=-7, help='Value between -5*e and +5*e')
+        self.parser.add_argument('--blur_dilat_size', type=int, default=9, help='Size of structuring element for dilatation')  # noqa
+        self.parser.add_argument('--blur_gauss_size', type=int, default=7, help='Size of Gaussian matrix')
+        self.parser.add_argument('--blur_gauss_sigma', type=int, default=3, help='Standard deviation of Gaussian')
