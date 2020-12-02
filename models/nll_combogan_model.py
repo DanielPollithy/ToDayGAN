@@ -124,15 +124,56 @@ class NLLComboGANModel(BaseModel):
                     self.visuals.append(self._normalize_unc_img(0.5 * (rec_uncertainty + fake_uncertainty)))
                     self.labels.append('sum_%d_std' % d)
 
-                # make uncertain regions black
+                # blur uncertain regions
                 threshold = -7
-                sum_mask = (rec_uncertainty + fake_uncertainty) < threshold
+                sum_mask = (rec_uncertainty + fake_uncertainty) > threshold
+                print("sum_mask", sum_mask.size())
+
+                # kernel = np.array([ [0, 1, 0], [1, 1, 1], [0, 1, 0] ], dtype=np.float32)
+                dilation_size = 9
+                dilation_pad = (dilation_size-1)//2
+                dil_tuple = (dilation_pad, dilation_pad)
+                kernel = np.ones([dilation_size, dilation_size])
+                kernel_tensor = torch.Tensor(np.expand_dims(np.expand_dims(kernel, 0), 0)).to("cuda:0") # size: (1, 1, 3, 3)
+                torch_result = torch.nn.functional.conv2d(sum_mask.float(), kernel_tensor, padding=dil_tuple)
+                sum_mask = torch_result>0
+
+                # blurred version of the output image
+                from util.util import gkern_2d
+                blur_size = 7
+                blur_tuple = [(blur_size-1)//2]*2
+                gaussian_np = gkern_2d(size=blur_size, sigma=3)  # .transpose([1, 0, 2, 3])
+                gaussian = torch.Tensor(gaussian_np).to("cuda:0")
+                fake = fake/2.0
+                fake += 0.5
+                print("fake", fake.size())
+                print("gauss", gaussian.size())
+                blurred_output = torch.nn.functional.conv2d(fake, gaussian, padding=blur_tuple, groups=3)
+                print(torch.min(blurred_output), torch.max(blurred_output), torch.sum(gaussian))
+                blurred_output = torch.clamp(blurred_output, min=0, max=1)
+                # blurred_output -= 0.5
+                # blurred_output *= 2.0
+                # blurred_output = torch.clamp(blurred_output, min=-1, max=1)
+                # self.visuals.append(blurred_output)
+                # self.labels.append('blurred_output_%d' % d)
+
+                # Select blurred pixels
+                blurred_part = blurred_output.masked_fill(~sum_mask, 0.0)
+                sharp_part = fake.masked_fill(sum_mask, 0.0)
+                merged_output = blurred_part + sharp_part
+                merged_output = 2.0*merged_output - 1.0
+                self.visuals.append(merged_output)
+                self.labels.append('blurred_%d' % d)
+
+
                 input_img = self.real_A.masked_fill(sum_mask, 0.0)
                 encoded = self.netG.encode(input_img, self.DA)
                 fake = self.netG.decode(encoded, d)
                 fake_uncertainty = fake[:, -1:, ...] * self.unc_constant
                 fake = fake[:, :-1, ...]
                 fakes.append(fake)
+                self.visuals.append(input_img)
+                self.labels.append('black_input_%d' % d)
                 self.visuals.append(fake)
                 self.labels.append('black_%d' % d)
                 self.visuals.append(self._normalize_unc_img(fake_uncertainty))
