@@ -41,12 +41,12 @@ def enable_dropout(model):
         if m.__class__.__name__.startswith('Dropout'):
             m.train()
 
-
-# Enable dropout during test
-for m in model.netG.encoders + model.netG.decoders:
-    enable_dropout(m)
-
 monte_carlo_samples = opt.monte_carlo_samples
+
+if monte_carlo_samples > 1:
+    # Enable dropout during test
+    for m in model.netG.encoders + model.netG.decoders:
+        enable_dropout(m)
 
 if opt.netvlad:
     print('Load NetVLAD')
