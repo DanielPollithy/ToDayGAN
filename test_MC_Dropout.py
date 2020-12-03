@@ -103,24 +103,17 @@ for i, data in tqdm(enumerate(dataset), total=len(dataset)):
         sample_mean = np.mean(samples, axis=0)
         netvlad_mean_netvlads.append(sample_mean)
 
-
-        sample_cov = np.cov(samples, rowvar=False)
-        # only diagonal
-        # sample_cov_diag = np.diagonal(sample_cov).copy()
-        # cheap inversion
-        # inv_cov = 1.0 / np.diag(sample_cov_diag)
-        inv_cov = np.linalg.pinv(sample_cov)
-        condition_number = np.linalg.norm(sample_cov) * np.linalg.norm(inv_cov)
-        print('condition_number', condition_number)
-
-
-        # calc mahalanobis distance to every reference vector
-        dists = []
-        for ref in range(netvlad_ref_descriptors.shape[0]):  # Vectorize!
-            y = netvlad_ref_descriptors[ref]
-            m_d = distance.mahalanobis(sample_mean, y, inv_cov)
-            dists.append(m_d)
-        mahalanobis_distances.append(dists)
+        if opt.mahala:
+            sample_cov = np.cov(samples, rowvar=False)
+            inv_cov = np.linalg.pinv(sample_cov)
+            condition_number = np.linalg.norm(sample_cov) * np.linalg.norm(inv_cov)
+            # calc mahalanobis distance to every reference vector
+            dists = []
+            for ref in range(netvlad_ref_descriptors.shape[0]):  # Vectorize!
+                y = netvlad_ref_descriptors[ref]
+                m_d = distance.mahalanobis(sample_mean, y, inv_cov)
+                dists.append(m_d)
+            mahalanobis_distances.append(dists)
 
 
 if opt.netvlad:
@@ -147,19 +140,20 @@ if opt.netvlad:
                                               output_filename=os.path.join(opt.results_dir, 'top_1_mean_netvlads.txt'))
     pose_predictor.save(pose_predictor.run())
 
-    # netvlad mahal.
-    mahalanobis_distances = np.array(mahalanobis_distances).T
-    print('mahalanobis_distances', mahalanobis_distances.shape)
-    # Replace NaNs with large distances
-    mahalanobis_distances[np.isnan(mahalanobis_distances)] = np.nanmax(mahalanobis_distances)
-    # Convert the distance matrix to a similarity matrix
-    reciprocal_similarities = np.nanmax(mahalanobis_distances) / mahalanobis_distances
-    plt.matshow((reciprocal_similarities - np.mean(reciprocal_similarities))/np.std(reciprocal_similarities))
-    plt.savefig("mahalanobis_similarities.jpg")
-    ranks = np.argsort(-reciprocal_similarities, axis=0)
-    pose_predictor = NearestNeighborPredictor(dataset=robotcar_dataset, network=None, ranks=ranks, log_images=False,
-                                              output_filename=os.path.join(opt.results_dir, 'top_1_mahalanobis.txt'))
-    pose_predictor.save(pose_predictor.run())
+    if opt.mahala:
+        # netvlad mahal.
+        mahalanobis_distances = np.array(mahalanobis_distances).T
+        print('mahalanobis_distances', mahalanobis_distances.shape)
+        # Replace NaNs with large distances
+        mahalanobis_distances[np.isnan(mahalanobis_distances)] = np.nanmax(mahalanobis_distances)
+        # Convert the distance matrix to a similarity matrix
+        reciprocal_similarities = np.nanmax(mahalanobis_distances) / mahalanobis_distances
+        plt.matshow((reciprocal_similarities - np.mean(reciprocal_similarities))/np.std(reciprocal_similarities))
+        plt.savefig("mahalanobis_similarities.jpg")
+        ranks = np.argsort(-reciprocal_similarities, axis=0)
+        pose_predictor = NearestNeighborPredictor(dataset=robotcar_dataset, network=None, ranks=ranks, log_images=False,
+                                                  output_filename=os.path.join(opt.results_dir, 'top_1_mahalanobis.txt'))
+        pose_predictor.save(pose_predictor.run())
 
 webpage.save()
 
