@@ -163,12 +163,12 @@ class NLLComboGANModel(BaseModel):
                     self.visuals.append(merged_output)
                     self.labels.append('blurred_%d' % d)
 
-            fakes = torch.stack(fakes)
-            faked_std, fakes_mean = torch.std_mean(fakes, dim=0)
-            self.visuals.append(fakes_mean)
-            self.labels.append('mean_%d' % d)
-            #self.visuals.append(faked_std)
-            #self.labels.append('std_%d' % d)
+                fakes = torch.stack(fakes)
+                faked_std, fakes_mean = torch.std_mean(fakes, dim=0)
+                self.visuals.append(fakes_mean)
+                self.labels.append('mean_%d' % d)
+                #self.visuals.append(faked_std)
+                #self.labels.append('std_%d' % d)
 
     def get_image_paths(self):
         return self.image_paths
@@ -284,7 +284,7 @@ class NLLComboGANModel(BaseModel):
         img = img/1.0421906109874948
         return img
 
-    def get_current_visuals(self, testing=False):
+    def get_current_visuals(self, testing=False, delete_afterwards=False):
         if not testing:
             self.visuals = [self.real_A, self.fake_B,
                             self._normalize_unc_img(self.fake_B_uncertainty), self.rec_A,
@@ -296,6 +296,8 @@ class NLLComboGANModel(BaseModel):
                            'fake_A', 'fake_A_uncertainty',
                            'rec_B', 'rec_B_uncertainty']
         images = [util.tensor2im(v.data) for v in self.visuals]
+        if delete_afterwards:
+            del self.visuals
         return OrderedDict(zip(self.labels, images))
 
     def save(self, label):
