@@ -89,6 +89,20 @@ class NLLComboGANModel(BaseModel):
             self.visuals = [self.real_A]
             self.labels = ['real_%d' % self.DA]
 
+            # Init the kernels on gpu
+            # dilatation of the mask
+            dilation_size = self.opt.blur_dilat_size
+            dilation_pad = (dilation_size - 1) // 2
+            dil_tuple = (dilation_pad, dilation_pad)
+            kernel = np.ones([dilation_size, dilation_size])
+            kernel_tensor = self.Tensor(np.expand_dims(np.expand_dims(kernel, 0), 0))  # size: (1, 1, 3, 3)
+            # gaussian
+            blur_size = self.opt.blur_gauss_size
+            sigma = self.opt.blur_gauss_sigma
+            blur_tuple = [(blur_size - 1) // 2] * 2
+            gaussian_np = gkern_2d(size=blur_size, sigma=sigma)  # .transpose([1, 0, 2, 3])
+            gaussian = self.Tensor(gaussian_np)
+
             # cache encoding to not repeat it everytime
             encoded = self.netG.encode(self.real_A, self.DA)
             if self.opt.flip_export:
@@ -128,22 +142,10 @@ class NLLComboGANModel(BaseModel):
                 # blur uncertain regions
                 threshold = self.opt.blur_thresh
                 sum_mask = (rec_uncertainty + fake_uncertainty) > threshold
-
-                # dilatation of the mask
-                dilation_size = self.opt.blur_dilat_size
-                dilation_pad = (dilation_size-1)//2
-                dil_tuple = (dilation_pad, dilation_pad)
-                kernel = np.ones([dilation_size, dilation_size])
-                kernel_tensor = self.Tensor(np.expand_dims(np.expand_dims(kernel, 0), 0))  # size: (1, 1, 3, 3)
                 torch_result = torch.nn.functional.conv2d(sum_mask.float(), kernel_tensor, padding=dil_tuple)
                 sum_mask = torch_result > 0
 
                 # Blur the synthetic day image
-                blur_size = self.opt.blur_gauss_size
-                sigma = self.opt.blur_gauss_sigma
-                blur_tuple = [(blur_size-1)//2]*2
-                gaussian_np = gkern_2d(size=blur_size, sigma=sigma)  # .transpose([1, 0, 2, 3])
-                gaussian = self.Tensor(gaussian_np)
                 fake = (fake/2.0) + 0.5
                 blurred_output = torch.nn.functional.conv2d(fake, gaussian, padding=blur_tuple, groups=3)
                 blurred_output = torch.clamp(blurred_output, min=0, max=1)
