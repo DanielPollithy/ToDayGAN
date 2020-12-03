@@ -70,7 +70,11 @@ for i, data in tqdm(enumerate(dataset), total=len(dataset)):
     # Compute NetVLAD embeddings for the images
     if opt.netvlad:
         # Only consider the 'mc_' samples and the 'mc_mean' image
-        paths = [path for path in paths if ('mean' in path or 'blurred' in path)]
+        if opt.blur:
+            paths = [path for path in paths if ('mean' in path or 'blurred' in path)]
+        else:
+            paths = [path for path in paths if ('mean' in path)]
+
         embeddings = netvlad_model.compute_embedding(paths)
         if not opt.no_pca:
             embeddings = normalize(pca.transform(normalize(embeddings)))
@@ -79,7 +83,8 @@ for i, data in tqdm(enumerate(dataset), total=len(dataset)):
         netvlad_mean_images.append(embeddings[['mean' in path for path in paths]])
 
         # NetVLAD of the blurred image
-        netvlad_blurred_images.append(embeddings[['blurred' in path for path in paths]])
+        if opt.blur:
+            netvlad_blurred_images.append(embeddings[['blurred' in path for path in paths]])
 
 if opt.netvlad:
     # netvlad mean images matching
@@ -91,14 +96,15 @@ if opt.netvlad:
                                               output_filename=os.path.join(opt.results_dir, 'top_1_images_mean.txt'))
     pose_predictor.save(pose_predictor.run())
 
-    # netvlad blurred images matching
-    print('Euclidean Ranking: images_blur')
-    netvlad_mean_netvlads = np.vstack(netvlad_blurred_images)
-    scores = np.dot(netvlad_ref_descriptors, netvlad_mean_netvlads.T)
-    ranks = np.argsort(-scores, axis=0)
-    pose_predictor = NearestNeighborPredictor(dataset=robotcar_dataset, network=None, ranks=ranks, log_images=False,
-                                              output_filename=os.path.join(opt.results_dir, 'top_1_images_blur.txt'))
-    pose_predictor.save(pose_predictor.run())
+    if opt.blur:
+        # netvlad blurred images matching
+        print('Euclidean Ranking: images_blur')
+        netvlad_mean_netvlads = np.vstack(netvlad_blurred_images)
+        scores = np.dot(netvlad_ref_descriptors, netvlad_mean_netvlads.T)
+        ranks = np.argsort(-scores, axis=0)
+        pose_predictor = NearestNeighborPredictor(dataset=robotcar_dataset, network=None, ranks=ranks, log_images=False,
+                                                  output_filename=os.path.join(opt.results_dir, 'top_1_images_blur.txt'))
+        pose_predictor.save(pose_predictor.run())
 
 webpage.save()
 

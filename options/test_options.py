@@ -35,6 +35,7 @@ class TestOptions(BaseOptions):
                                  help='np array of NetVLAD descriptors for the reference images')
 
         # blurring for NLL-CycleGAN
+        self.parser.add_argument('--blur', action='store_true', default=False, help='Blur uncertain regions')
         self.parser.add_argument('--blur_thresh', type=int, default=-7, help='Value between -5*e and +5*e')
         self.parser.add_argument('--blur_dilat_size', type=int, default=9, help='Size of structuring element for dilatation')  # noqa
         self.parser.add_argument('--blur_gauss_size', type=int, default=7, help='Size of Gaussian matrix')

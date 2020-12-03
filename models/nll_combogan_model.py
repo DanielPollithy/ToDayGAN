@@ -141,24 +141,25 @@ class NLLComboGANModel(BaseModel):
                     self.visuals.append(self._normalize_unc_img(0.5 * (rec_uncertainty + fake_uncertainty)))
                     self.labels.append('sum_%d_std' % d)
 
-                # blur uncertain regions
-                threshold = self.opt.blur_thresh
-                sum_mask = (rec_uncertainty + fake_uncertainty) > threshold
-                torch_result = torch.nn.functional.conv2d(sum_mask.float(), self.kernel_tensor, padding=self.dil_tuple)
-                sum_mask = torch_result > 0
+                if self.opt.blur:
+                    # blur uncertain regions
+                    threshold = self.opt.blur_thresh
+                    sum_mask = (rec_uncertainty + fake_uncertainty) > threshold
+                    torch_result = torch.nn.functional.conv2d(sum_mask.float(), self.kernel_tensor, padding=self.dil_tuple)
+                    sum_mask = torch_result > 0
 
-                # Blur the synthetic day image
-                fake = (fake/2.0) + 0.5
-                blurred_output = torch.nn.functional.conv2d(fake, self.gaussian, padding=self.blur_tuple, groups=3)
-                blurred_output = torch.clamp(blurred_output, min=0, max=1)
+                    # Blur the synthetic day image
+                    fake = (fake/2.0) + 0.5
+                    blurred_output = torch.nn.functional.conv2d(fake, self.gaussian, padding=self.blur_tuple, groups=3)
+                    blurred_output = torch.clamp(blurred_output, min=0, max=1)
 
-                # Select blurred pixels
-                blurred_part = blurred_output.masked_fill(~sum_mask, 0.0)
-                sharp_part = fake.masked_fill(sum_mask, 0.0)
-                merged_output = blurred_part + sharp_part
-                merged_output = 2.0*merged_output - 1.0
-                self.visuals.append(merged_output)
-                self.labels.append('blurred_%d' % d)
+                    # Select blurred pixels
+                    blurred_part = blurred_output.masked_fill(~sum_mask, 0.0)
+                    sharp_part = fake.masked_fill(sum_mask, 0.0)
+                    merged_output = blurred_part + sharp_part
+                    merged_output = 2.0*merged_output - 1.0
+                    self.visuals.append(merged_output)
+                    self.labels.append('blurred_%d' % d)
 
         fakes = torch.stack(fakes)
         faked_std, fakes_mean = torch.std_mean(fakes, dim=0)
