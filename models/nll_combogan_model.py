@@ -277,8 +277,10 @@ class NLLComboGANModel(BaseModel):
     def _normalize_unc_img(self, img):
         # squash the standard deviation between 0 and 1.  1 is the maximum sample variance on the interval [-1,+1]
         img = torch.sqrt(torch.exp(img/5.0))
-        img = (img - np.sqrt(np.exp(-1)))
-        img = img/(np.sqrt(np.exp(+1)) - np.sqrt(np.exp(-1)))
+        # np.sqrt(np.exp(-1)) = 0.6065306597126334
+        img = (img - 0.6065306597126334)
+        # (np.sqrt(np.exp(+1)) - np.sqrt(np.exp(-1))) =
+        img = img/1.0421906109874948
         return img
 
     def get_current_visuals(self, testing=False):
