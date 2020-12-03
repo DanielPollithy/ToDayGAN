@@ -123,6 +123,7 @@ class NLLComboGANModel(BaseModel):
 
                 if self.opt.flip_export:
                     output_flipped = self.netG.decode(encoded_flipped, d)
+                    output_flipped = output_flipped[:, :-1, ...]
                     fake_flip = torch.flip(output_flipped, [3])
                     self.visuals.append(fake_flip)
                     fakes.append(fake_flip)
