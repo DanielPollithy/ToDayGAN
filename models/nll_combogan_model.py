@@ -103,8 +103,6 @@ class NLLComboGANModel(BaseModel):
             self.visuals = [self.real_A]
             self.labels = ['real_%d' % self.DA]
 
-
-
             # cache encoding to not repeat it everytime
             encoded = self.netG.encode(self.real_A, self.DA)
             if self.opt.flip_export:
@@ -112,13 +110,16 @@ class NLLComboGANModel(BaseModel):
             for d in range(self.n_domains):
                 if d == self.DA and not self.opt.autoencode:
                     continue
-                fake = self.netG.decode(encoded, d)
-                fake_uncertainty = fake[:, -1:, ...] * self.unc_constant
-                fake = fake[:, :-1, ...]
+                fake_out = self.netG.decode(encoded, d)
+                fake_uncertainty = fake_out[:, -1:, ...] # * self.unc_constant
+                fake = fake_out[:, :-1, ...]
                 fakes.append(fake)
                 self.visuals.append(fake)
                 self.labels.append('fake_%d' % d)
-                self.visuals.append(self._normalize_unc_img(fake_uncertainty))
+
+                # _normalize_unc_img  ... but inline
+                fake_uncertainty_normalized = (torch.sqrt(torch.exp(fake_uncertainty)) - 0.6065) / 1.042
+                self.visuals.append(fake_uncertainty_normalized)
                 self.labels.append('fake_%d_std' % d)
 
                 if self.opt.flip_export:
@@ -145,7 +146,7 @@ class NLLComboGANModel(BaseModel):
                 if self.opt.blur:
                     # blur uncertain regions
                     threshold = self.opt.blur_thresh
-                    sum_mask = (rec_uncertainty + fake_uncertainty) > threshold
+                    sum_mask = (rec_uncertainty + fake_uncertainty) > threshold/self.unc_constant
                     torch_result = torch.nn.functional.conv2d(sum_mask.float(), self.kernel_tensor, padding=self.dil_tuple)
                     sum_mask = torch_result > 0
 
@@ -166,8 +167,8 @@ class NLLComboGANModel(BaseModel):
             faked_std, fakes_mean = torch.std_mean(fakes, dim=0)
             self.visuals.append(fakes_mean)
             self.labels.append('mean_%d' % d)
-            self.visuals.append(faked_std)
-            self.labels.append('std_%d' % d)
+            #self.visuals.append(faked_std)
+            #self.labels.append('std_%d' % d)
 
     def get_image_paths(self):
         return self.image_paths
