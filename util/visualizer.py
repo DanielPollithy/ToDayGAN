@@ -150,6 +150,7 @@ class Visualizer():
                 plt.margins(0,0)
                 # plt.colorbar()
                 plt.savefig(save_path, bbox_inches='tight', pad_inches=0)
+                plt.close('all')
             else:
                 util.save_image(image_numpy, save_path)
 

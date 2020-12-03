@@ -117,6 +117,7 @@ class NLLComboGANModel(BaseModel):
                 self.visuals.append(fake)
                 self.labels.append('fake_%d' % d)
 
+                # ToDo: Fix memory bug here
                 # _normalize_unc_img  ... but inline
                 fake_uncertainty_normalized = (torch.sqrt(torch.exp(fake_uncertainty)) - 0.6065) / 1.042
                 self.visuals.append(fake_uncertainty_normalized)
