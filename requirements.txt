@@ -7,3 +7,4 @@ tqdm
 matplotlib
 pandas
 opencv-python
+numpy
