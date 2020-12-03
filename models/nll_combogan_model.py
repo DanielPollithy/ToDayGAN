@@ -117,9 +117,7 @@ class NLLComboGANModel(BaseModel):
                 self.visuals.append(fake)
                 self.labels.append('fake_%d' % d)
 
-                # ToDo: Fix memory bug here
-                # _normalize_unc_img  ... but inline
-                fake_uncertainty_normalized = (torch.sqrt(torch.exp(fake_uncertainty)) - 0.6065) / 1.042
+                fake_uncertainty_normalized = self._normalize_unc_img(fake_uncertainty)
                 self.visuals.append(fake_uncertainty_normalized)
                 self.labels.append('fake_%d_std' % d)
 
@@ -133,7 +131,7 @@ class NLLComboGANModel(BaseModel):
 
                 if self.opt.reconstruct:
                     rec = self.netG.forward(fake, d, self.DA)
-                    rec_uncertainty = rec[:, -1:, ...] * self.unc_constant
+                    rec_uncertainty = rec[:, -1:, ...]
                     rec = rec[:, :-1, ...]
                     self.visuals.append(rec)
                     self.labels.append('rec_%d' % d)
@@ -278,7 +276,7 @@ class NLLComboGANModel(BaseModel):
 
     def _normalize_unc_img(self, img):
         # squash the standard deviation between 0 and 1.  1 is the maximum sample variance on the interval [-1,+1]
-        img = torch.sqrt(torch.exp(img/5.0))
+        img = torch.sqrt(torch.exp(img))
         # np.sqrt(np.exp(-1)) = 0.6065306597126334
         img = (img - 0.6065306597126334)
         # (np.sqrt(np.exp(+1)) - np.sqrt(np.exp(-1))) =
