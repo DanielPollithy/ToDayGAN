@@ -70,7 +70,7 @@ for i, data in tqdm(enumerate(dataset), total=len(dataset)):
     # Compute NetVLAD embeddings for the images
     if opt.netvlad:
         # Only consider the 'mc_' samples and the 'mc_mean' image
-        paths = [path for path in paths if ('mean' in path or 'blurred' not in path)]
+        paths = [path for path in paths if ('mean' in path or 'blurred' in path)]
         embeddings = netvlad_model.compute_embedding(paths)
         if not opt.no_pca:
             embeddings = normalize(pca.transform(normalize(embeddings)))
