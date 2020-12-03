@@ -139,7 +139,9 @@ class NLLComboGANModel(BaseModel):
                     self.labels.append('rec_%d_std' % d)
 
                     # sum both uncertainties
-                    self.visuals.append(self._normalize_unc_img(0.5 * (rec_uncertainty + fake_uncertainty)))
+                    sum_unc = torch.log(0.5*(torch.exp(rec_uncertainty) + torch.exp(fake_uncertainty)))
+                    sum_unc = torch.clamp(sum_unc, -1, +1)
+                    self.visuals.append(self._normalize_unc_img(sum_unc))
                     self.labels.append('sum_%d_std' % d)
 
                 if self.opt.blur:
