@@ -114,7 +114,7 @@ if opt.netvlad:
     scores = np.dot(netvlad_ref_descriptors, netvlad_mean_images.T)
     ranks = np.argsort(-scores, axis=0)
     plt.matshow(scores)
-    plt.savefig("euclidean_similarities_images_mean.jpg")
+    plt.savefig(os.path.join(opt.results_dir, "euclidean_similarities_images_mean.jpg"))
 
     pose_predictor = NearestNeighborPredictor(dataset=robotcar_dataset, network=None, ranks=ranks, log_images=False,
                                               output_filename=os.path.join(opt.results_dir, 'top_1_images_mean.txt'))
@@ -126,7 +126,7 @@ if opt.netvlad:
     scores = np.dot(netvlad_ref_descriptors, netvlad_mean_netvlads.T)
     ranks = np.argsort(-scores, axis=0)
     plt.matshow(scores)
-    plt.savefig("euclidean_similarities_netvlad_mean.jpg")
+    plt.savefig(os.path.join(opt.results_dir, "euclidean_similarities_netvlad_mean.jpg"))
     pose_predictor = NearestNeighborPredictor(dataset=robotcar_dataset, network=None, ranks=ranks, log_images=False,
                                               output_filename=os.path.join(opt.results_dir, 'top_1_mean_netvlads.txt'))
     pose_predictor.save(pose_predictor.run())
@@ -140,7 +140,7 @@ if opt.netvlad:
         # Convert the distance matrix to a similarity matrix
         reciprocal_similarities = np.nanmax(mahalanobis_distances) / mahalanobis_distances
         plt.matshow((reciprocal_similarities - np.mean(reciprocal_similarities))/np.std(reciprocal_similarities))
-        plt.savefig("mahalanobis_similarities.jpg")
+        plt.savefig(os.path.join(opt.results_dir, "mahalanobis_similarities.jpg"))
         ranks = np.argsort(-reciprocal_similarities, axis=0)
         pose_predictor = NearestNeighborPredictor(dataset=robotcar_dataset, network=None, ranks=ranks, log_images=False,
                                                   output_filename=os.path.join(opt.results_dir, 'top_1_mahalanobis.txt'))
@@ -154,7 +154,7 @@ if opt.netvlad:
         # Convert the distance matrix to a similarity matrix
         reciprocal_similarities = np.nanmax(sed_distances) / sed_distances
         plt.matshow((reciprocal_similarities - np.mean(reciprocal_similarities)) / np.std(reciprocal_similarities))
-        plt.savefig("sed_similarities.jpg")
+        plt.savefig(os.path.join(opt.results_dir, "sed_similarities.jpg"))
         ranks = np.argsort(-reciprocal_similarities, axis=0)
         pose_predictor = NearestNeighborPredictor(dataset=robotcar_dataset, network=None, ranks=ranks, log_images=False,
                                                   output_filename=os.path.join(opt.results_dir, 'top_1_sed.txt'))

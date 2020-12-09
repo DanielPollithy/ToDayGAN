@@ -2,6 +2,7 @@ import time
 import os
 import pickle
 import numpy as np
+import matplotlib.pyplot as plt
 
 from models.nll_combogan_model import NLLComboGANModel
 from options.test_options import TestOptions
@@ -92,6 +93,8 @@ if opt.netvlad:
     netvlad_mean_images = np.vstack(netvlad_mean_images)
     scores = np.dot(netvlad_ref_descriptors, netvlad_mean_images.T)
     ranks = np.argsort(-scores, axis=0)
+    plt.matshow(ranks)
+    plt.savefig(os.path.join(opt.results_dir, "euclidean_similarities_images_mean.jpg"))
     pose_predictor = NearestNeighborPredictor(dataset=robotcar_dataset, network=None, ranks=ranks, log_images=False,
                                               output_filename=os.path.join(opt.results_dir, 'top_1_images_mean.txt'))
     pose_predictor.save(pose_predictor.run())
@@ -102,6 +105,8 @@ if opt.netvlad:
         netvlad_mean_netvlads = np.vstack(netvlad_blurred_images)
         scores = np.dot(netvlad_ref_descriptors, netvlad_mean_netvlads.T)
         ranks = np.argsort(-scores, axis=0)
+        plt.matshow(ranks)
+        plt.savefig(os.path.join(opt.results_dir, "euclidean_similarities_blur.jpg"))
         pose_predictor = NearestNeighborPredictor(dataset=robotcar_dataset, network=None, ranks=ranks, log_images=False,
                                                   output_filename=os.path.join(opt.results_dir, 'top_1_images_blur.txt'))
         pose_predictor.save(pose_predictor.run())
