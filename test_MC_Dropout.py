@@ -172,11 +172,11 @@ if opt.netvlad:
         plt.matshow((reciprocal_similarities - np.mean(reciprocal_similarities)) / np.std(reciprocal_similarities))
         plt.savefig(os.path.join(opt.results_dir, "sed_similarities.jpg"))
 
-        adj2 = np.zeros_like(reciprocal_similarities)
-        for y, x in enumerate(reciprocal_similarities.argmax(axis=1)):
-            adj2[x, y] = 1
-        plt.matshow(adj2)
-        plt.savefig(os.path.join(opt.results_dir, "sed_matches.jpg"))
+        # adj2 = np.zeros_like(reciprocal_similarities)
+        # for y, x in enumerate(reciprocal_similarities.argmax(axis=1)):
+        #     adj2[x, y] = 1
+        # plt.matshow(adj2)
+        # plt.savefig(os.path.join(opt.results_dir, "sed_matches.jpg"))
 
         ranks = np.argsort(-reciprocal_similarities, axis=0)
         pose_predictor = NearestNeighborPredictor(dataset=robotcar_dataset, network=None, ranks=ranks, log_images=False,
