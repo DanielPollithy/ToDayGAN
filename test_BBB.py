@@ -161,35 +161,3 @@ if opt.netvlad:
         pose_predictor.save(pose_predictor.run())
 
 webpage.save()
-
-
-
-
-
-
-
-
-
-
-
-
-# test
-for i, data in enumerate(dataset):
-    if not opt.serial_test and i >= opt.how_many:
-        break
-    model.set_input(data)
-    model.test(monte_carlo_samples=monte_carlo_samples)
-    visuals = model.get_current_visuals(testing=True)
-    img_path = model.get_image_paths()
-    print('process image... %s' % img_path)
-    visualizer.save_images(webpage, visuals, img_path)
-
-    if opt.show_matrix:
-        vis_buffer.append(visuals)
-        if (i+1) % opt.n_domains == 0:
-            save_path = os.path.join(web_dir, 'mat_%d.png' % (i//opt.n_domains))
-            visualizer.save_image_matrix(vis_buffer, save_path)
-            vis_buffer.clear()
-
-webpage.save()
-
