@@ -1,70 +1,75 @@
+# Uncertain ToDayGAN
 
-# ToDayGAN
+This is an extension to [Asha Anoosheh's](https://github.com/aanoosheh) [ToDayGAN](https://github.com/aanoosheh/ToDayGAN) with uncertainty estimation. It is built upon [ComboGAN](https://github.com/AAnoosheh/ComboGAN)
 
-This is our PyTorch implementation for ToDayGAN.
-Code was written by [Asha Anoosheh](https://github.com/aanoosheh) (built upon [ComboGAN](https://github.com/AAnoosheh/ComboGAN))
+The repo features four models:
 
-#### [[ToDayGAN Paper]](https://arxiv.org/pdf/1809.09767.pdf)
-#### [[ComboGAN Paper]](https://arxiv.org/pdf/1712.06909.pdf)
-
-
-If you use this code for your research, please cite:
-
-Night-to-Day Image Translation for Retrieval-based Localization
-[Asha Anoosheh](http://ashaanoosheh.com),  [Torsten Sattler](http://people.inf.ethz.ch/sattlert/), [Radu Timofte](http://www.vision.ee.ethz.ch/~timofter/), [Marc Pollefeys](https://www.microsoft.com/en-us/research/people/mapoll/), [Luc van Gool](https://www.vision.ee.ethz.ch/en/members/get_member.cgi?id=1)
-In Arxiv, 2018.
-
-
-<img src='img/Matches.png' align="center" width=666>
-<br><br>
-<img src='img/Discr.png' width=666>
-<br><br>
-<img src="img/Res.png" width=666/>
+ - ToDayGAN (the original model)
+ - BBB-CycleGAN (The generators are trained with Bayes-by-Backprop)
+ - MCD-CycleGAN (Generators with Monte Carlo Dropout)
+ - NLL-CycleGAN (Reconstruction loss with negative log-likelihood)
+ 
+ <img src='img/extension.png'>
+ 
+ The models can be trained and evaluated on images from the Oxford RobotCar night dataset by calling the following files:
+ 
+ - `train_BBB.py`, `test_BBB.py`
+ - `train.py` with Dropout > 0, `test_MC_Dropout.py`
+ - `train_NLL.py`, `test_NLL.py`
 
 
-## Prerequisites
-- Linux or macOS
-- Python 3
-- CPU or NVIDIA GPU + CUDA CuDNN
+## Installation
 
-## Getting Started
-### Installation
-- Install requisite Python libraries.
+Setup a conda environment with CUDA 10, cudnn>=7.6, **Python3.8** and then install requisite Python libraries with `python3 -m pip install requirements.txt`
+
+### Training and testing
+Running scripts for training and testing of all models can be found in the `scripts` directory.
+For example in `scripts/train_bbb.sh`:
+
 ```bash
-pip install torch
-pip install torchvision
-pip install visdom
-pip install dominate
-```
-- Clone this repo:
-```bash
-git clone https://github.com/AAnoosheh/ToDayGAN.git
+python train_BBB.py --dataroot ./datasets/robotcar \
+  --name robotcar_BBB_kl_0_001 \
+  --n_domains 2 \
+  --niter 75 \
+  --niter_decay 75 \
+  --loadSize 512 \
+  --fineSize 384 \
+  --checkpoints_dir "/net/skoll/storage/datasets/robotcar/robotcar/todaygan_new/bbb_150/kl/0.001" \
+  --kl_beta 0.001
 ```
 
-### Training
-Example running scripts can be found in the `scripts` directory.
+One of the pretrained models for the ToDayGAN can be found [here](https://www.dropbox.com/s/mwqfbs19cptrej6/2DayGAN_Checkpoint150.zip?dl=0). 
+Place it under `./checkpoints/robotcar_<yourname>` and test it with `--name <robotcar_yourname>`.
 
-One of our pretrained models for the Oxford Robotcars dataset is found [HERE](https://www.dropbox.com/s/mwqfbs19cptrej6/2DayGAN_Checkpoint150.zip?dl=0). Place under ./checkpoints/robotcar_2day and test using the instructions below, with args `--name robotcar_2day --dataroot ./datasets/<your_test_dir> --n_domains 2 --which_epoch 150 --loadSize 512`
+The `dataroot/` can contain four subfolders `train0`, `train1`, `test0` and `test1`. Where `0` ìs the day-domain and `1` the night-domain. 
+The train.py-scripts use the trainX folders.
 
-Because of sesitivity to instrinsic camera characteristics, testing should ideally be on the same Oxford dataset photos (and same Grasshopper camera) found conveniently preprocessed and ready-to-use [HERE](https://www.visuallocalization.net/datasets/).
+During training, checkpoints will be saved by default to `./checkpoints/<experiment_name>/`
+The test results are exported to `./results/<experiment_name>/<epoch_number>` by default.
 
-If using this pretrained model, `<your_test_dir>` should contain two subfolders `test0` & `test1`, containing Day and Night images to test, respectively (as mine was trained with this ordering). `test0` can be empty if you do not care about Day image translated to Night, but just needs to exist to not break the code.
+### NetVLAD image-based retrieval
 
-- Train a model:
-```
-python train.py --name <experiment_name> --dataroot ./datasets/<your_dataset> --n_domains <N> --niter <num_epochs_constant_LR> --niter_decay <num_epochs_decaying_LR>
-```
-Checkpoints will be saved by default to `./checkpoints/<experiment_name>/`
-- Fine-tuning/Resume training:
-```
-python train.py --continue_train --which_epoch <checkpoint_number_to_load> --name <experiment_name> --dataroot ./datasets/<your_dataset> --n_domains <N> --niter <num_epochs_constant_LR> --niter_decay <num_epochs_decaying_LR>
-```
-- Test the model:
-```
-python test.py --phase test --serial_test --name <experiment_name> --dataroot ./datasets/<your_dataset> --n_domains <N> --which_epoch <checkpoint_number_to_load>
-```
-The test results will be saved to a html file here: `./results/<experiment_name>/<epoch_number>/index.html`.
+All models can be evaluated on the night-images of the visuallocalization benchmark by performing an image-based retrieval.
+This repository contains a version of NetVLAD extracted from [S2DHM](https://github.com/germain-hug/S2DHM).
+The `test*.py` files accept a `--netvlad` flag. If the following three files can be found, then the python scripts outputs pose predictions in form of a txt-file which can be uploaded directly to the visuallocalization servers.
+The three files can be downloaded here. You only have to place them into a suitable directory and set the flags right:
 
+ - [NetVLAD checkpoint](): The `.tar` weights of the neural network. `--netvlad_checkpoint`
+ - [reference descriptors](): The `.tsv` global descriptors of the database images of the Oxford Robotcar Dataset created with the NetVLAD checkpoint. `--netvlad_ref_descr`
+ - [pca transformation](): The `.pkl` pickle-dumped, non-deterministic PCA transformation trained on the reference descriptors. ``--netvlad_pca_dump``
+
+Note: The PCA is not neccessary if you set the following parameter: `--no_pca`
+
+### NLL-CycleGAN testing parameters
+
+- `--blur`: Blur uncertain regions before localization
+- `--blur_thresh`: Which pixels to blur depends on their uncertainty value
+- `--blur_dilat_size`: The uncertain pixels are dilated in order to fill gaps
+- `--blur_gauss_size` and `--blur_gauss_sigma` parameters of the blurring
+
+### MCD-CycleGAN and BBB-CycleGAN testing params
+
+The test scripts for these models perform multiple variations of the retrieval. One of the options is `--mahala` which activates the calculation and matching with the mahalanobis distance. Be aware that depending on the sample size `--monte_carlo_samples` this might take a while.
 
 
 ## Training/Testing Details
