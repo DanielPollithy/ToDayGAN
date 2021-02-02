@@ -54,11 +54,12 @@ This repository contains a version of NetVLAD extracted from [S2DHM](https://git
 The `test*.py` files accept a `--netvlad` flag. If the following three files can be found, then the python scripts outputs pose predictions in form of a txt-file which can be uploaded directly to the visuallocalization servers.
 The three files can be downloaded here. You only have to place them into a suitable directory and set the flags right:
 
- - [NetVLAD checkpoint](): The `.tar` weights of the neural network. `--netvlad_checkpoint`
- - [reference descriptors](): The `.tsv` global descriptors of the database images of the Oxford Robotcar Dataset created with the NetVLAD checkpoint. `--netvlad_ref_descr`
- - [pca transformation](): The `.pkl` pickle-dumped, non-deterministic PCA transformation trained on the reference descriptors. ``--netvlad_pca_dump``
+ - [NetVLAD checkpoint](https://pollithy.com/MA/netvlad/checkpoint.pth.tar): The `.tar` weights of the neural network. `--netvlad_checkpoint`
+ - [reference descriptors](https://pollithy.com/MA/netvlad/reference_descriptors.tsv): The `.tsv` global descriptors of the database images of the Oxford Robotcar Dataset created with the NetVLAD checkpoint. `--netvlad_ref_descr`
+ - [pca transformation](https://pollithy.com/MA/netvlad/pca.pkl ): The `.pkl` pickle-dumped, non-deterministic PCA transformation trained on the reference descriptors. ``--netvlad_pca_dump``
 
-Note: The PCA is not neccessary if you set the following parameter: `--no_pca`
+Note: The PCA is not neccessary if you set the following parameter: `--no_pca`. 
+You can create your own reference_descriptors with the code in S2DHM.
 
 ### NLL-CycleGAN testing parameters
 
